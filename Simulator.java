@@ -10,8 +10,6 @@ public class Simulator {
     public double Clock,LastEventTime;
     public int highwaySpeed;
     public EventList FutureEventList;
-//    public Station StationArr[];
-    //public Queue Customers;
     public Rand stream;
     public ArrayList<City> cityList;
     public ArrayList<Station> stationList;
@@ -40,6 +38,18 @@ public class Simulator {
      Car car = randomCar();
      Event evt = new Event(car.getNextStation(), Clock, car, departCity);
      FutureEventList.enqueue(evt);
+     // Put the cities in cityList
+     for(i=0;i<StationArray.length;i++){
+       if(StationArray[i] instanceof City){
+         cityList.add(StationArray[i]);
+       }
+     }
+     // Put the stations in a seperate list
+     for(i=0;i<StationArray.length;i++){
+       if(StationArray[i] instanceof RechargeStation){
+         stationList.add(StationArray[i]);
+       }
+     }
 
     }
 
@@ -63,7 +73,6 @@ public class Simulator {
       }
       else {
         sta.queueCar(car);  //server is busy
-        sta.queueLength++;
       }
       LastEventTime = Clock;
     }
@@ -73,9 +82,8 @@ public class Simulator {
     // sta.chargeRate is the amount of time it takes to charge 100% IN HOURS
     // car.direction is +1 if it's going + on the line, -1 if it's going - on the line
     public void ScheduleOutletDeparture(Station sta, Car car){
-     sta.outletsInUse++;
+     sta.queueOutlet(car);
      sta.dequeueCar(car);
-     station.queueLength--;
      double chargeTime = (1-car.chargePer)*car.chargeTime; // This may be car specific
      Event departOutlet = new Event(sta, Clock + chargeTime, car, departOutlet);
      car.chargePer = 100.0;
@@ -85,6 +93,9 @@ public class Simulator {
     // I'm so scared that none of this will work
     public void ProcessOutletDeparture(Event e){
       // Send the Car to the next Station
+      if(e.sta instanceof City){
+        throw new Exception("You tried to process an outlet departure from a city, dummy");
+      }
       double travelTime = Math.abs( (e.sta.position - e.car.getNextStation().position) /highwaySpeed);
       if(e.car.getNextStation() instanceof City){
         Event arriveCity = new Event(car.getNextStation(), Clock + travelTime, car, arriveCity);
@@ -96,12 +107,12 @@ public class Simulator {
       }
       
       // Queue the next car if there is one
-      if (e.sta.queuelength>0){
-        sta.outletsInUse--;
-        ScheduleOutletDeparture(e.sta, e.sta.queue.get(0));
+      if (e.sta.queueLength>0){
+        e.sta.dequeueOutlet(e.car);
+        ScheduleOutletDeparture(e.sta, e.sta.carQueue.get(0));
       }
       else 
-        e.sta.outletsInUse=0;
+        e.sta.dequeueOutlet(e.car);
     }
     
     // This will probably never be un-commented, it's kinda useless and does 
@@ -197,6 +208,7 @@ public class Simulator {
 //        System.out.println("\n  Average Number Of Customers In Queue       " +  AverageQueueLength);
 //        System.out.println("\n  Maximum Number Of Customers In Queue       " +  MaxQueueLength);
 //    }
+    }
 }
 
     
