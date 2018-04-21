@@ -11,24 +11,24 @@ public class Simulator {
     public int highwaySpeed;
     public EventList FutureEventList;
     public Rand stream;
-    public ArrayList<City> cityList;
+    public ArrayList<Station> cityList;
     public ArrayList<Station> stationList;
 
-    public Station StationArray[] = { new City("Richmond",0),
-                                    new RechargeStation("S1",45,30),
-                                    new RechargeStation("S2",104,30),
-                                    new City("Washington D.C.",109),
-                                    new RechargeStation("S3",136,30),
-                                    new RechargeStation("S4",210,30),
-                                    new City("Philly", 248),
-                                    new RechargeStation("S5",250,30),
-                                    new RechargeStation("S6",315,30),
-                                    new RechargeStation("S7",335,30),
-                                    new City("New York City",346),
-                                    new RechargeStation("S8",404.5,30),
-                                    new RechargeStation("S9",490,30),
-                                    new RechargeStation("S10",538,30),
-                                    new City("Boston",561)};
+    public Station StationArray[] = { new City("Richmond",0,this),
+                                    new RechargeStation("S1",45,30,this),
+                                    new RechargeStation("S2",104,30,this),
+                                    new City("Washington D.C.",109,this),
+                                    new RechargeStation("S3",136,30,this),
+                                    new RechargeStation("S4",210,30,this),
+                                    new City("Philly", 248,this),
+                                    new RechargeStation("S5",250,30,this),
+                                    new RechargeStation("S6",315,30,this),
+                                    new RechargeStation("S7",335,30,this),
+                                    new City("New York City",346,this),
+                                    new RechargeStation("S8",404.5,30,this),
+                                    new RechargeStation("S9",490,30,this),
+                                    new RechargeStation("S10",538,30,this),
+                                    new City("Boston",561,this)};
 
     public void Initialization(){
      Clock=0.0;
@@ -39,13 +39,13 @@ public class Simulator {
      Event evt = new Event(car.getNextStation(), Clock, car, departCity);
      FutureEventList.enqueue(evt);
      // Put the cities in cityList
-     for(i=0;i<StationArray.length;i++){
+     for(int i=0;i<StationArray.length;i++){
        if(StationArray[i] instanceof City){
          cityList.add(StationArray[i]);
        }
      }
      // Put the stations in a seperate list
-     for(i=0;i<StationArray.length;i++){
+     for(int i=0;i<StationArray.length;i++){
        if(StationArray[i] instanceof RechargeStation){
          stationList.add(StationArray[i]);
        }
@@ -57,7 +57,7 @@ public class Simulator {
     // FRAMEWORK: DONE
     // FLESHING: NOT DONE
     // Extra Functions Used
-    public void ProcessStationArrival(Event evt){
+    public void ProcessStationArrival (Event evt) throws Exception{
       // Who and where?
       Station sta = evt.getStation();
       Car car = evt.getCar();
@@ -68,8 +68,8 @@ public class Simulator {
       if(car.chargePer <0){
         throw new Exception("Car arrived with less than 0 charge");
       }
-      if(sta.outletsInUse < sta.capacity){
-        ScheduleOutletDeparture(sta, car);
+      if(evt.getStation().getOutletsInUse() < evt.getStation().getCapacity()){
+        ScheduleOutletDeparture((RechargeStation)sta, car);
       }
       else {
         sta.queueCar(car);  //server is busy
@@ -81,38 +81,38 @@ public class Simulator {
     // FLESHING: NOT DONE
     // sta.chargeRate is the amount of time it takes to charge 100% IN HOURS
     // car.direction is +1 if it's going + on the line, -1 if it's going - on the line
-    public void ScheduleOutletDeparture(Station sta, Car car){
+    public void ScheduleOutletDeparture(RechargeStation sta, Car car) throws Exception{
      sta.queueOutlet(car);
      sta.dequeueCar(car);
      double chargeTime = (1-car.chargePer)*car.chargeTime; // This may be car specific
-     Event departOutlet = new Event(sta, Clock + chargeTime, car, departOutlet);
+     Event departOutletEvent = new Event(sta, Clock + chargeTime, car, departOutlet);
      car.chargePer = 100.0;
-     FutureEventList.enqueue(departOutlet);
+     FutureEventList.enqueue(departOutletEvent);
     }
     
     // I'm so scared that none of this will work
-    public void ProcessOutletDeparture(Event e){
+    public void ProcessOutletDeparture(Event e) throws Exception{
       // Send the Car to the next Station
-      if(e.sta instanceof City){
+      if(e.getStation() instanceof City){
         throw new Exception("You tried to process an outlet departure from a city, dummy");
       }
-      double travelTime = Math.abs( (e.sta.position - e.car.getNextStation().position) /highwaySpeed);
-      if(e.car.getNextStation() instanceof City){
-        Event arriveCity = new Event(car.getNextStation(), Clock + travelTime, car, arriveCity);
-        FutureEventList.enqueue(arriveCity);
+      double travelTime = Math.abs( (e.getStation().position - e.getCar().getNextStation().position) /highwaySpeed);
+      if(e.getCar().getNextStation() instanceof City){
+        Event arriveCityEvent = new Event(e.getCar().getNextStation(), Clock + travelTime, e.getCar(), arriveCity);
+        FutureEventList.enqueue(arriveCityEvent);
       }
-      if(e.car.getNextStation() instanceof RechargeStation){
-        Event arriveStation = new Event(car.getNextStation(), Clock + travelTime, car, arriveStation);
-        FutureEventList.enqueue(arriveStation);
+      if(e.getCar().getNextStation() instanceof RechargeStation){
+        Event arriveStationEvent = new Event(e.getCar().getNextStation(), Clock + travelTime, e.getCar(), arriveStation);
+        FutureEventList.enqueue(arriveStationEvent);
       }
       
       // Queue the next car if there is one
-      if (e.sta.queueLength>0){
-        e.sta.dequeueOutlet(e.car);
-        ScheduleOutletDeparture(e.sta, e.sta.carQueue.get(0));
+      if (e.getStation().getQueueLength()>0){
+        e.getStation().dequeueOutlet(e.getCar());
+        ScheduleOutletDeparture((RechargeStation)e.getStation(), e.getStation().getCarQueue().get(0));
       }
       else 
-        e.sta.dequeueOutlet(e.car);
+        e.getStation().dequeueOutlet(e.getCar());
     }
     
     // This will probably never be un-commented, it's kinda useless and does 
@@ -121,7 +121,7 @@ public class Simulator {
 //    public void ProcessStationDeparture(Event e){
 //      //get the customers description
 //      Event arriveStation = new Event(car.getNextStation(), Clock + travelTime, car, arriveStation);
-//      e.sta.departures++;
+//      e.getStation().departures++;
 //      FutureEventList.enqueue(arriveStation);
 //      LastEventTime=Clock;
 //    }
@@ -134,26 +134,26 @@ public class Simulator {
     
     public void ProcessCityDeparture(Event e){
       // Send it to a station,
-      if (car.destBound){
+      if(e.getCar().destBound){
         //and make a new car from a new city
         Car newCar = randomCar();
-        ScheduleCityDeparture(newCar, cityList.get(car.home));
+        ScheduleCityDeparture(newCar, (City)cityList.get(e.getCar().home));
       }
-      double travelTime = Math.abs( (e.sta.position - e.car.getNextStation().position) /highwaySpeed);
-      Event getToStation = new Event(e.car.getNextStation(), Clock + travelTime, car, stationArrival);
+      double travelTime = Math.abs( (e.getStation().position - e.getCar().getNextStation().position) /highwaySpeed);
+      Event getToStation = new Event(e.getCar().getNextStation(), Clock + travelTime, e.getCar(), arriveStation);
       FutureEventList.enqueue(getToStation);
     }
     
     public void ProcessCityArrival(Event e){
-      if(!e.car.destBound){
-        e.car.reportStatistics(); // For right now, this does nothing, but it will once we have a working model
-        e.car.destroy(); // Destroy the car? I'm really not sure how this will work
+      if(!e.getCar().destBound){
+        e.getCar().reportStatistics(); // For right now, this does nothing, but it will once we have a working model
+        e.getCar().deleteCar(e.getCar()); // Destroy the car? I'm really not sure how this will work
       }
       else{
         // Send the car to its next station after it's stayTime + travelTime
-        e.car.destBound = false;
-        double travelTime = Math.abs( (e.city.position - e.car.getNextStation().position) /highwaySpeed);
-        Event departCity = new Event(e.car.getNextStation(), Clock + e.car.stayTime + travelTime, e.car, stationArrival);
+        e.getCar().destBound = false;
+        double travelTime = Math.abs( (e.getStation().position - e.getCar().getNextStation().position) /highwaySpeed);
+        Event departCity = new Event(e.getCar().getNextStation(), Clock + e.getCar().stayTime + travelTime, e.getCar(), arriveStation);
         FutureEventList.enqueue(departCity);
       }
     }
@@ -168,13 +168,13 @@ public class Simulator {
       // generate a random welath level (unused) between 1-3
       int cityNum = (int)uniform(stream, 1,6);
       int destinationNum = cityNum;
-      while(cityNum = destinationNum){
-        int destinationNum = (int)uniform(stream,1,6);
+      while(cityNum == destinationNum){
+        destinationNum = (int)uniform(stream,1,6);
       }
       int carType = (int)uniform(stream,1,4);
       int wealthLvl = (int)uniform(stream,1,4);
       double stayTime = 24; // This says that all cars stay for a day no matter what, that will not be true
-      Car newCar = new Car(carType,wealthLvl,cityNum, stayTime,destinationNum); 
+      Car newCar = new Car(carType,wealthLvl,cityNum, stayTime,destinationNum, this); 
       return newCar;
     }
     

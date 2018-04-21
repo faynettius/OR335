@@ -1,8 +1,8 @@
 public class MainClass{
- public static void main(String argv[]){
+ public static void main(String argv[]) throws Exception{
   Simulator ss = new Simulator();
   ss.FutureEventList = new EventList();
-  ss.Customers = new Queue();
+//  ss.Customers = new Queue();
   ss.stream=new Rand();
   ss.Clock=0.0;
   //ss.MeanInterArrivalTime=7.7;
@@ -12,7 +12,7 @@ public class MainClass{
   while (ss.Clock<=10000){
    Event evt = ss.FutureEventList.getMin();  //get imminent event
    ss.FutureEventList.dequeue();             //delete the event
-   ss.Clock=evt.get_time();                  //advance in time
+   ss.Clock=evt.getTime();                  //advance in time
    switch(evt.getType()){
       case 1: ss.ProcessCityDeparture(evt); 
       break;
@@ -20,8 +20,8 @@ public class MainClass{
       break;
       case 3: ss.ProcessOutletDeparture(evt);
       break;
-      case 4: ss.ProcessStationDeparture(evt);
-      break;
+//      case 4: ss.ProcessStationDeparture(evt);
+//      break;
       case 5: ss.ProcessCityArrival(evt);
       break;
     }

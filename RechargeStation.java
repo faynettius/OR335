@@ -14,14 +14,23 @@ public class RechargeStation extends Station{
   protected double accumUtilization;
   protected double lastTime;
   protected int departures;
+  public Simulator ss;
   
-
-  public RechargeStation(String name, double position, int capacity){
+  public RechargeStation(){
+    this.name = "Larry";
+    this.position = -1;
+    this.capacity = 0;
+    this.carQueue = new ArrayList<Car>();
+    this.outletQueue = new ArrayList<Car>();
+    
+  }
+  public RechargeStation(String name, double position, int capacity, Simulator ss){
     this.name = name;
     this.position = position;
     this.capacity = capacity;
     this.carQueue = new ArrayList<Car>();
     this.outletQueue = new ArrayList<Car>();
+    this.ss = ss;
   }
   
   public void queueCar(Car car){
@@ -41,7 +50,7 @@ public class RechargeStation extends Station{
   }
   
   // Puts a car in this station's outlets
-  public void queueOutlet(Car car){
+  public void queueOutlet(Car car) throws Exception{
     // First, collect statistics
     updateStats();
     // queue the car
@@ -95,6 +104,13 @@ public class RechargeStation extends Station{
   public int getCapacity(){
     return capacity;
   }
-
-
+  public int getOutletsInUse(){
+    return outletsInUse;
+  }
+  public int getQueueLength(){
+    return queueLength;
+  }
+  public ArrayList<Car> getCarQueue(){
+    return carQueue;
+  }
 }
